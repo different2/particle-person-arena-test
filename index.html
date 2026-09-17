@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Particle Person Arena — 2D photo → 3D particle character</title>
+  <meta name="description" content="Turn a 2D person photo into an interactive, rigged 3D particle character." />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <div>
+        <h1>Particle Person Arena</h1>
+        <p>2D photo → rigged 3D particle character</p>
+      </div>
+    </div>
+    <ol class="stepper" id="stepper">
+      <li data-stage="1"><span class="n">1</span> Reference</li>
+      <li data-stage="2"><span class="n">2</span> Extracted</li>
+      <li data-stage="3"><span class="n">3</span> Particle 3D</li>
+    </ol>
+    <div class="top-actions">
+      <button class="btn ghost" id="snapshotBtn" title="Download a PNG snapshot of the 3D view">⤓ Snapshot</button>
+      <button class="btn primary" id="howBtn">How it works</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: source + pipeline -->
+    <aside class="panel left">
+      <section class="card">
+        <h2><span class="hnum">1</span> Reference image</h2>
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a person photo">
+          <div class="dz-icon">⤒</div>
+          <p><strong>Drop a photo</strong> or click to browse</p>
+          <small>Full-body, facing camera works best · JPG/PNG</small>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <div class="samples">
+          <button class="sample" data-sample="samples/sample-1.jpg">
+            <img src="./samples/sample-1.jpg" alt="Sample: woman in A-pose" />
+            <span>Sample · A-pose</span>
+          </button>
+          <button class="sample" data-sample="samples/sample-2.jpg">
+            <img src="./samples/sample-2.jpg" alt="Sample: man waving" />
+            <span>Sample · Wave</span>
+          </button>
+          <button class="sample demo" id="demoBtn">
+            <span class="demo-glyph">✦</span>
+            <span>Hologram demo</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="hnum">2</span> Extracted person</h2>
+        <div class="status" id="pipelineStatus"><span class="pulse"></span> Ready</div>
+        <div class="progress"><div class="bar" id="progressBar"></div></div>
+        <div class="stage-grid">
+          <figure>
+            <figcaption>Reference</figcaption>
+            <canvas id="refCanvas" width="240" height="300"></canvas>
+          </figure>
+          <figure>
+            <figcaption>Cutout + rig</figcaption>
+            <canvas id="cutCanvas" width="240" height="300"></canvas>
+          </figure>
+        </div>
+        <div class="badges" id="detectInfo"></div>
+        <div class="row split">
+          <span class="seed" id="seedLabel" title="Same seed + same image always builds the same character">seed 1337</span>
+          <span class="row">
+            <button class="btn small ghost" id="seedBtn" title="Rebuild with a new random seed">⚄ Shuffle</button>
+            <button class="btn small ghost" id="rebuildBtn" title="Rebuild the character from the current photo">↻ Rebuild</button>
+          </span>
+        </div>
+      </section>
+
+      <section class="card note">
+        <strong>Honest depth.</strong> A photo has no back side — body thickness is
+        <em>procedurally inferred</em> (volumetric capsules measured from your silhouette),
+        never claimed as captured data.
+        <button class="link" id="howBtn2">Learn more</button>
+      </section>
+    </aside>
+
+    <!-- CENTER: 3D stage -->
+    <main class="stage">
+      <div class="viewport" id="viewport"></div>
+      <div class="overlay stats" id="stats">— fps · — particles</div>
+      <div class="overlay hint">drag&nbsp;·&nbsp;orbit&nbsp;&nbsp;&nbsp;scroll&nbsp;·&nbsp;zoom&nbsp;&nbsp;&nbsp;right-drag&nbsp;·&nbsp;pan</div>
+      <div class="overlay badge3d">3 · particle character</div>
+      <div class="veil hidden" id="veil">
+        <div class="spinner"></div>
+        <p id="veilText">Building character…</p>
+      </div>
+    </main>
+
+    <!-- RIGHT: controls -->
+    <aside class="panel right">
+      <section class="card">
+        <h2>Camera &amp; view</h2>
+        <label class="check"><input type="checkbox" id="rotToggle" /> Auto-rotate turntable</label>
+        <label class="slider">Turntable speed <b id="rotSpeedVal">1.6×</b>
+          <input type="range" id="rotSpeed" min="0.2" max="4" step="0.1" value="1.6" />
+        </label>
+        <label class="check"><input type="checkbox" id="skelToggle" /> Show rig skeleton</label>
+        <label class="check"><input type="checkbox" id="gridToggle" checked /> Show floor grid</label>
+        <div class="row">
+          <button class="btn small ghost" id="frameBtn">⟡ Frame character</button>
+          <button class="btn small ghost" id="camBtn">⌖ Reset camera</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Particles</h2>
+        <label class="slider">Density <b id="densityVal">22,000</b>
+          <input type="range" id="density" min="2000" max="40000" step="1000" value="22000" />
+        </label>
+        <label class="slider">Particle size <b id="sizeVal">1.00×</b>
+          <input type="range" id="psize" min="0.4" max="2.6" step="0.05" value="1" />
+        </label>
+        <label class="slider">Scatter / explode <b id="scatterVal">0.00</b>
+          <input type="range" id="scatter" min="0" max="0.6" step="0.01" value="0" />
+        </label>
+        <label class="slider">Body depth <b id="depthVal">1.00×</b>
+          <input type="range" id="depth" min="0.15" max="1.8" step="0.05" value="1" />
+        </label>
+        <div class="seg-label">Color mode</div>
+        <div class="seg" id="colorSeg">
+          <button data-mode="0" class="active">Original</button>
+          <button data-mode="1">Vivid</button>
+          <button data-mode="2">Depth</button>
+          <button data-mode="3">Parts</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Animation</h2>
+        <div class="presets" id="presetRow">
+          <button data-preset="none">Static</button>
+          <button data-preset="idle" class="active">Idle</button>
+          <button data-preset="wave">Wave</button>
+          <button data-preset="walk">Walk</button>
+          <button data-preset="dance">Dance</button>
+          <button data-preset="spin">Spin</button>
+        </div>
+        <label class="slider">Motion strength <b id="ampVal">1.00×</b>
+          <input type="range" id="amp" min="0" max="1.5" step="0.05" value="1" />
+        </label>
+        <div class="row">
+          <button class="btn small ghost" id="playBtn">⏸ Pause motion</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Joints <span class="hsub">drag to pose</span></h2>
+        <div id="jointSliders"></div>
+        <div class="row">
+          <button class="btn small ghost" id="poseResetBtn">↺ Reset pose</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="modal hidden" id="howModal" role="dialog" aria-modal="true" aria-labelledby="howTitle">
+    <div class="modal-card">
+      <button class="modal-x" id="howClose" aria-label="Close">✕</button>
+      <h2 id="howTitle">How the transformation works</h2>
+      <ol class="how-steps">
+        <li><strong>Reference.</strong> You provide a photo (or use a sample). It is downscaled in-browser; nothing is uploaded anywhere.</li>
+        <li><strong>Extraction.</strong> An on-device pose model finds 33 body joints, and a segmentation model cuts the person out of the background. You can see both in the “Extracted person” panel.</li>
+        <li><strong>3D body volumes.</strong> Each body part becomes a volumetric capsule/ellipsoid. Its width is <em>measured</em> from your silhouette; its depth is <em>procedurally inferred</em> (elliptical cross-sections, ~0.8× the width). Joint depth hints come from the pose model.</li>
+        <li><strong>Particles.</strong> Up to 40,000 particles are sampled <em>through the volume</em> — front and back — and colored from the photo. The hidden back side deterministically reuses mirrored front colors, darkened for a volume cue. Same seed + same photo ⇒ identical character.</li>
+        <li><strong>Rig &amp; play.</strong> Particles are bound to a 28-joint skeleton with forward kinematics, so sliders and animations deform the whole volume coherently from any camera angle.</li>
+      </ol>
+      <h3>Limitations (by design)</h3>
+      <ul class="how-limits">
+        <li>The back of the person is <strong>hallucinated</strong>, not reconstructed — rotate behind and you see a plausible guess.</li>
+        <li>Loose clothing, occlusions and cropped bodies degrade gracefully: missing parts are skipped, never invented as fact.</li>
+        <li>Joint rotations are world-axis approximations — great for play, not a biomechanics lab.</li>
+        <li>If the ML models can’t load (offline), the app falls back to a procedural body fitted to your photo’s framing.</li>
+      </ul>
+      <h3>Tips</h3>
+      <p>Full-body · facing the camera · arms slightly away from the torso · plain background. Try the <strong>Depth</strong> color mode while orbiting to feel the volume.</p>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

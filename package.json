@@ -1,0 +1,22 @@
+{
+  "name": "particle-person-arena",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Turn a 2D person photo into an interactive 3D particle character.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 5173",
+    "test": "node test/run.mjs"
+  },
+  "dependencies": {
+    "three": "latest"
+  },
+  "devDependencies": {
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0",
+    "puppeteer": "^25.11.0",
+    "vite": "latest"
+  }
+}
