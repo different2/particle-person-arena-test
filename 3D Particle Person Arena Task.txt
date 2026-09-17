@@ -1,0 +1,42 @@
+Task: Turn a 2D Person Image into an Interactive 3D Particle Character
+Build an interactive web experience that takes a 2D reference image of a person and transforms the person into a 3D particle-based character.
+The goal is not to simply place the original image on a plane or create a flat point cloud. The result should look and behave like a three-dimensional person constructed from particles.
+Core requirements
+	1	Allow the user to provide a 2D image of a person as the reference.
+	2	Extract the person's visible structure from the image and construct a 3D particle representation.
+	3	The resulting character should preserve recognizable features such as:
+	◦	head
+	◦	torso
+	◦	arms
+	◦	hands
+	◦	legs
+	◦	overall body proportions
+	◦	recognizable pose
+	4	Particles should form a coherent three-dimensional structure rather than merely reproducing the image as a flat surface.
+	5	Give the user an interactive 3D camera so the character can be viewed from different angles.
+	6	Include controls that demonstrate the 3D nature of the character. For example:
+	◦	rotate the character
+	◦	change particle density
+	◦	change particle size
+	◦	adjust depth
+	◦	manipulate body parts or joints
+	◦	animate the character
+	7	The particle representation should remain visually coherent while the camera moves and while the character is manipulated.
+Important constraint
+The reference image is 2D, so the system will not have true information about the person's hidden sides.
+Use a reasonable deterministic or procedural method to infer/construct the missing depth rather than pretending the original image contains information that it does not.
+Presentation
+Make the result visually interesting, but prioritize the underlying transformation and interaction.
+The user should be able to clearly see:
+2D reference → extracted person → 3D particle character
+The final result should feel like an actual interactive 3D particle character rather than a conventional image viewer.
+Evaluation
+The implementation will be evaluated based on:
+	•	How recognizable the resulting person is
+	•	How convincingly three-dimensional the result is
+	•	Quality and coherence of the particle structure
+	•	How well the body responds to interaction
+	•	Quality of the camera controls
+	•	Whether the implementation actually performs the requested transformation
+	•	Overall usability and visual clarity
+Use whatever technical approach you think is appropriate. Do not assume a particular library or implementation strategy.
